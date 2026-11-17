@@ -4,50 +4,56 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#10131b">
-  <title>Foster's Media</title>
+  <title>Foster's Media · Payments</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <main class="shell">
-    <header class="top"><div class="mark">FM</div><div><b>Foster's Media</b><small>Campaign management</small></div><button id="settingsBtn" class="ghost">Setup</button></header>
-    <section id="setup" class="panel hidden">
-      <h1>Connect your Supabase project</h1>
-      <p class="muted">Enter your project URL and publishable key. These are browser-safe project details. Never enter a service-role key or database password.</p>
-      <label>Project URL<input id="projectUrl" placeholder="https://your-project.supabase.co" autocomplete="url"></label>
-      <label>Publishable key<input id="publishableKey" placeholder="sb_publishable_..." autocomplete="off"></label>
-      <button id="saveSetup" class="primary">Save connection</button>
-      <p id="setupMsg" class="message"></p>
-    </section>
-    <section id="auth" class="panel">
-      <div class="eyebrow">WELCOME</div><h1>Sign in to your workspace</h1>
-      <div class="tabs"><button id="adminTab" class="tab active">Admin</button><button id="influencerTab" class="tab">Influencer</button></div>
-      <div id="adminForm">
-        <label>Email<input id="email" type="email" placeholder="admin@example.com" autocomplete="username"></label>
-        <label>Password<input id="password" type="password" placeholder="Your password" autocomplete="current-password"></label>
-        <button id="adminLogin" class="primary">Sign in as admin</button>
+<main class="shell">
+  <header class="top"><div class="mark">FM</div><div><b>Foster's Media</b><small>Influencer payment manager</small></div><button id="logout" class="ghost hidden">Sign out</button></header>
+
+  <section id="setup" class="panel hidden">
+    <h1>Connect Supabase</h1>
+    <p class="muted">Use your project URL and publishable key only. Never enter a service-role key or database password.</p>
+    <label>Project URL<input id="projectUrl" placeholder="https://your-project.supabase.co"></label>
+    <label>Publishable key<input id="publishableKey" placeholder="sb_publishable_..."></label>
+    <button id="saveSetup" class="primary">Save connection</button><p id="setupMsg" class="message"></p>
+  </section>
+
+  <section id="auth" class="panel">
+    <div class="eyebrow">ADMIN ACCESS</div><h1>Influencer payments</h1>
+    <p class="muted">Sign in to manage campaign-wise influencer payments.</p>
+    <label>Email<input id="email" type="email" autocomplete="username" placeholder="Admin email"></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label>
+    <button id="adminLogin" class="primary">Sign in</button>
+    <button id="settingsBtn" class="textButton">Supabase connection settings</button>
+    <p id="authMsg" class="message"></p>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="welcome"><div><div class="eyebrow">PAYMENT DASHBOARD</div><h1 id="hello">Welcome</h1><p class="muted">Record and track payments by influencer and campaign.</p></div></div>
+    <div class="stats">
+      <article class="stat"><span>Total recorded</span><strong id="totalAmount">₹0</strong></article>
+      <article class="stat"><span>Paid</span><strong id="paidAmount">₹0</strong></article>
+      <article class="stat"><span>Pending</span><strong id="pendingAmount">₹0</strong></article>
+    </div>
+    <section class="panel">
+      <h2>Add payment</h2>
+      <div class="formgrid">
+        <label>Influencer<select id="influencerSelect"><option value="">Loading influencers…</option></select></label>
+        <label>Campaign<select id="campaignSelect"><option value="">Loading campaigns…</option></select></label>
+        <label>Amount (₹)<input id="amount" type="number" min="1" step="0.01" placeholder="2000"></label>
+        <label>Description (optional)<input id="description" type="text" placeholder="Instagram promotion"></label>
       </div>
-      <div id="influencerForm" class="hidden">
-        <label>Mobile number<input id="phone" type="tel" placeholder="+91XXXXXXXXXX" autocomplete="tel"></label>
-        <button id="sendOtp" class="primary">Send OTP</button>
-        <label>OTP<input id="otp" inputmode="numeric" placeholder="Enter OTP"></label>
-        <button id="verifyOtp" class="secondary">Verify OTP</button>
-      </div>
-      <p id="authMsg" class="message"></p>
-      <p class="muted tiny">Influencer OTP works only after phone authentication is configured in Supabase.</p>
+      <button id="addPayment" class="primary">Save payment as pending</button>
+      <p id="formMsg" class="message"></p>
     </section>
-    <section id="dashboard" class="hidden">
-      <div class="welcome"><div><div class="eyebrow">WORKSPACE</div><h1 id="hello">Dashboard</h1><p id="roleText" class="muted"></p></div><button id="logout" class="ghost">Sign out</button></div>
-      <div class="grid">
-        <article class="tile"><span class="tileIcon">◎</span><h3>Campaigns</h3><p>Campaign workspace</p><span class="status">Next build step</span></article>
-        <article class="tile"><span class="tileIcon">▦</span><h3>Visit schedule</h3><p>Plan and review visits</p><span class="status">Next build step</span></article>
-        <article class="tile"><span class="tileIcon">▧</span><h3>Story submissions</h3><p>Review proof screenshots</p><span class="status">Next build step</span></article>
-        <article class="tile"><span class="tileIcon">₹</span><h3>Payments</h3><p>Track payment status</p><span class="status">Next build step</span></article>
-      </div>
-      <div class="panel"><h2>Connection check</h2><p id="connectionStatus" class="muted">Checking your profile…</p></div>
+    <section class="panel">
+      <div class="sectionHead"><div><h2>Payment history</h2><p class="muted tiny">Mark a pending payment as paid when it is completed.</p></div><button id="refresh" class="ghost">Refresh</button></div>
+      <div id="paymentList" class="tableWrap"><p class="muted">Loading payments…</p></div>
     </section>
-    <footer>Foster's Media · Private workspace</footer>
-  </main>
-  <script src="app.js"></script>
-</body>
-</html>
+  </section>
+  <footer>Foster's Media · Admin payment workspace</footer>
+</main>
+<script src="app.js"></script>
+</body></html>
