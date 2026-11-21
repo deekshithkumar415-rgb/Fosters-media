@@ -35,6 +35,19 @@ th{color:#62566e!important;background:#faf7fd}
 @media(min-width:1600px){main{max-width:1640px!important}#workspace>.grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media(max-width:900px){main{width:100%!important}#workspace>.grid{grid-template-columns:1fr!important}header{display:block}}
 .scroll{max-width:100%;overflow-x:auto}img{max-width:100%}button{cursor:pointer}
+</style><style id="fosters-red-black-theme">
+:root{color-scheme:dark;--fm-red:#ed343e;--fm-red-light:#ff5962;--fm-black:#0c0c0e;--fm-panel:#19191c;--fm-border:#393034}
+html,body{background:#0d0d0f!important;color:#f8f4f4!important}
+header{background:#101012!important;border-bottom:2px solid #d92d38!important}header b{color:#f33b47!important}header .muted{color:#d6c7c9!important}
+h1,h2,h3{color:#fff!important}main{color:#f4edef!important}
+section,section section{background:#1a1a1d!important;border:1px solid #3b3235!important;box-shadow:0 6px 26px #0004!important}
+section:hover{border-color:#54383d!important}
+label{color:#f1e8ea!important}.muted{color:#b9aeb1!important}.notice,.tag{color:#ff7d85!important}
+input,select,textarea{background:#101012!important;color:#fff!important;border:1px solid #514145!important}
+input:focus,select:focus,textarea:focus{outline:2px solid #f23d49!important;outline-offset:1px}
+button{background:#e23440!important;color:#fff!important}button.secondary{background:#302326!important;color:#ffadb2!important;border:1px solid #633b40!important}
+a{color:#ff717b!important}td,th{border-bottom:1px solid #3a3034!important;color:#f4edef!important}th{background:#252024!important;color:#f3d5d8!important}
+#workspace>h1{color:#fff!important}#login{border-top:3px solid #e23440!important}
 </style></head>
 <body><header><div style="display:flex;align-items:center;gap:12px"><img class="fosters-official-logo" alt="Foster's Media official logo" width="64" height="64" style="object-fit:contain;display:none"><b>FOSTER'S MEDIA</b></div><div class="muted">Admin dashboard · Desktop & mobile preview</div></header><main>
 <section id="login"><img class="fosters-official-logo" alt="Foster's Media official logo" width="110" height="110" style="object-fit:contain;display:none"><h1>Admin sign in</h1><p class="muted">Use your existing Supabase admin account.</p><label>Email<input id="email" type="email" autocomplete="username"></label><label>Password<input id="password" type="password" autocomplete="current-password"></label><button id="signIn">Sign in</button><p id="loginMsg" class="notice"></p></section>
