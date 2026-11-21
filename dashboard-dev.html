@@ -44,7 +44,7 @@ $('addLead').onclick=async()=>{const name=$('leadName').value.trim(),source_url=
 $('saveLead').onclick=async()=>{const id=$('leadSelect').value,contact_url=$('leadContact').value.trim();if(!id)return message('Choose a prospect.');if(contact_url&&!/^https:\/\//.test(contact_url))return message('Contact link must be HTTPS.');const {error}=await db.from('client_leads').update({status:$('leadStatus').value,next_follow_up:$('leadFollowUp').value||null,contact_url:contact_url||null,phone:$('leadPhone').value.trim()||null,notes:$('leadNotes').value.trim()||null,updated_at:new Date().toISOString()}).eq('id',id);if(error)return message(error.message);message('Prospect updated.');await refresh()};
 
 const instagramKey='fosters_agency_instagram_username';
-const savedInstagram=localStorage.getItem(instagramKey)||'';
+const savedInstagram=localStorage.getItem(instagramKey)||'fostersmedia';
 $('agencyInstagram').value=savedInstagram;
 function agencyInstagramHandle(){return $('agencyInstagram').value.trim().replace(/^@/,'')}
 $('saveAgencyInstagram').onclick=()=>{const h=agencyInstagramHandle();if(!/^[a-zA-Z0-9._]{1,30}$/.test(h))return message('Enter a valid Instagram username.');localStorage.setItem(instagramKey,h);$('agencyInstagramStatus').textContent='Profile saved on this device: @'+h;message('Instagram profile link saved locally.');};
