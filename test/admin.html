@@ -2,30 +2,67 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Foster's Media | Development Dashboard</title><script>window.addEventListener('error',function(e){var m=document.getElementById('loginMsg');if(m)m.textContent='Page error: '+(e.message||'Script failed to load')});window.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('signIn'),m=document.getElementById('loginMsg');if(m)m.textContent='Login page ready. Tap Sign in.';if(b)b.addEventListener('click',function(){if(m&&m.textContent==='Login page ready. Tap Sign in.')m.textContent='Button pressed. Checking login script…'},true)})</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>:root{font-family:system-ui;background:#101010;color:#f8f0e9}*{box-sizing:border-box}body{margin:0}header{padding:22px;background:#191919;border-bottom:1px solid #444}header b{color:#ff8979;font-size:22px}main{max-width:1050px;margin:auto;padding:20px}section{background:#202020;border:1px solid #393939;border-radius:16px;padding:20px;margin:18px 0}h1{font-size:26px}h2{font-size:19px}label{display:block;margin:12px 0;color:#ddd}input,select,textarea{width:100%;padding:12px;margin-top:5px;background:#111;border:1px solid #555;border-radius:8px;color:white;font-size:16px}button{padding:12px 16px;background:#ff8979;color:#111;border:0;border-radius:9px;font-weight:700;margin:6px 5px 6px 0;cursor:pointer}button.secondary{background:#333;color:white;border:1px solid #666}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.muted{color:#aaa}.hidden{display:none}table{width:100%;border-collapse:collapse;min-width:580px}td,th{text-align:left;border-bottom:1px solid #444;padding:12px}.scroll{overflow:auto}.notice{color:#ffbcae;min-height:20px}.tag{color:#ff8979}a{color:#ffac9e}</style></head>
 <body><header><b>FOSTER'S MEDIA</b><div class="muted">Admin dashboard · Test preview</div></header><main>
-<section id="login"><h1>Admin sign in</h1><p class="muted">Use your existing Supabase admin account.</p><label>Email<input id="email" type="email" autocomplete="username"></label><label>Password<input id="password" type="password" autocomplete="current-password"></label><button id="signIn" type="button" onclick="document.getElementById('loginMsg').textContent='Button tapped — checking connection…'">Sign in</button><p id="loginMsg" class="notice"></p></section>
+<section id="login"><h1>Admin sign in</h1><p class="muted">Use your existing Supabase admin account.</p><label>Email<input id="email" type="email" autocomplete="username"></label><label>Password<input id="password" type="password" autocomplete="current-password"></label><button id="signIn" type="button">Sign in</button><p id="loginMsg" class="notice"></p></section>
 <div id="workspace" class="hidden"><button class="secondary" id="signOut">Sign out</button><h1>Campaign management</h1><div class="grid"><section><h2>Add campaign</h2><label>Name<input id="campaignName" placeholder="Campaign name"></label><label>Location<input id="campaignLocation"></label><label>Google Maps URL<input id="campaignMaps" type="url"></label><label>Instructions<textarea id="campaignInstructions"></textarea></label><button id="addCampaign">Create campaign</button></section>
 <section><h2>Add influencer</h2><label>Name<input id="influencerName"></label><label>Email<input id="influencerEmail" type="email"></label><label>Mobile (+91… )<input id="influencerPhone" type="tel"></label><label>Instagram URL<input id="influencerInstagram"></label><label>Category<input id="influencerCategory"></label><button id="addInfluencer">Add influencer</button></section></div>
 <section><h2>Assign campaign</h2><div class="grid"><label>Influencer<select id="assignInfluencer"></select></label><label>Campaign<select id="assignCampaign"></select></label><label>Agreed total pay (₹)<input id="assignPay" type="number" min="0" step=".01"></label></div><button id="assign">Assign and create four visits</button></section>
 <section><h2>Campaigns</h2><div id="campaigns"></div></section><section><h2>Influencers</h2><div id="influencers" class="scroll"></div></section><section><h2>Payments by campaign</h2><div id="payments" class="scroll"></div></section><p id="status" class="notice"></p></div>
 </main><script>
-const URL='https://naonyxojsozwatpsiogo.supabase.co',KEY='sb_publishable_-B_chzmxnDeoQzWnzxcUWQ_vA1b4_L9';
-const $=id=>document.getElementById(id);const db=window.supabase?.createClient(URL,KEY);if(!db){$('loginMsg').textContent='Login library did not load. Try Safari or check network settings.';}
-const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','&quot;':'&quot;',"'":'&#39;'}[c]));
-const currency=v=>v==null?'Not set':new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(v);
+
+(function(){
+const el=id=>document.getElementById(id);
+const msg=v=>{el('loginMsg').textContent=v};
+let client=null;
+const url='https://naonyxojsozwatpsiogo.supabase.co';
+const key='sb_publishable_-B_chzmxnDeoQzWnzxcUWQ_vA1b4_L9';
+function html(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function money(v){return v==null?'Not set':new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(v)}
 let people=[],campaigns=[],assignments=[];
-function message(v){$('status').textContent=v}
-async function verify(){try{const {data:{user},error:authError}=await db.auth.getUser();if(authError)throw authError;if(!user)return false;const {data,error}=await db.from('admins').select('user_id').eq('user_id',user.id).maybeSingle();if(error)throw error;if(!data){$('loginMsg').textContent='This account is not authorized as an admin.';return false}$('login').classList.add('hidden');$('workspace').classList.remove('hidden');await refresh();return true}catch(e){$('loginMsg').textContent='Account check failed: '+(e?.message||String(e));return false}}
-$('signIn').onclick=async()=>{const btn=$('signIn');if(!db)return $('loginMsg').textContent='Login library unavailable. Refresh in Safari.';const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return $('loginMsg').textContent='Enter both email and password.';btn.disabled=true;$('loginMsg').textContent='Connecting to Supabase…';let timer=setTimeout(()=>{$('loginMsg').textContent='Still connecting. Check internet connection or try opening in Safari.'},12000);try{const {error}=await db.auth.signInWithPassword({email,password});if(error){$('loginMsg').textContent='Sign-in failed: '+error.message;return}$('loginMsg').textContent='Signed in. Loading dashboard…';await verify()}catch(e){$('loginMsg').textContent='Connection error: '+(e?.message||String(e))}finally{clearTimeout(timer);btn.disabled=false}};
-$('signOut').onclick=async()=>{await db.auth.signOut();location.reload()};
-async function refresh(){const [p,c,a]=await Promise.all([db.from('influencers').select('id,name,email,phone_e164,instagram_url,category,active').order('name'),db.from('campaigns').select('id,name,location,maps_url,instructions').order('name'),db.from('assignments').select('id,influencer_id,campaign_id,total_pay,advance')]);if(p.error||c.error||a.error){message([p.error?.message,c.error?.message,a.error?.message].filter(Boolean).join(' | '));return}people=p.data;campaigns=c.data;assignments=a.data;
-$('assignInfluencer').innerHTML='<option value="">Choose influencer</option>'+people.filter(p=>p.active).map(p=>'<option value="'+p.id+'">'+escapeHtml(p.name)+'</option>').join('');
-$('assignCampaign').innerHTML='<option value="">Choose campaign</option>'+campaigns.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>').join('');
-$('campaigns').innerHTML=campaigns.length?campaigns.map(c=>'<p><strong>'+escapeHtml(c.name)+'</strong> · '+escapeHtml(c.location||'Location not set')+'</p>').join(''):'No campaigns yet.';
-$('influencers').innerHTML=people.length?'<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Category</th></tr></thead><tbody>'+people.map(p=>'<tr><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.email||'Not set')+'</td><td>'+escapeHtml(p.phone_e164)+'</td><td>'+escapeHtml(p.category||'—')+'</td></tr>').join('')+'</tbody></table>':'No influencers yet.';
-$('payments').innerHTML=assignments.length?'<table><thead><tr><th>Name</th><th>Total Pay</th><th>Advance</th><th>Status</th></tr></thead><tbody>'+assignments.map(a=>{const p=people.find(p=>p.id===a.influencer_id),c=campaigns.find(c=>c.id===a.campaign_id);const status=a.total_pay==null?'Not Set':Number(a.advance)>=Number(a.total_pay)?'Paid':Number(a.advance)>0?'Partial':'Unpaid';return '<tr><td>'+escapeHtml(p?.name||'Unknown')+' <small class="tag">('+escapeHtml(c?.name||'Unknown')+')</small></td><td>'+currency(a.total_pay)+'</td><td>'+currency(a.advance)+'</td><td>'+status+'</td></tr>'}).join('')+'</tbody></table>':'No assignments yet.'}
-async function insert(table,values){const {error}=await db.from(table).insert(values);if(error){message(error.message);return false}message('Saved successfully.');await refresh();return true}
-$('addCampaign').onclick=async()=>{const name=$('campaignName').value.trim();if(!name)return message('Enter campaign name.');await insert('campaigns',{name,location:$('campaignLocation').value.trim()||null,maps_url:$('campaignMaps').value.trim()||null,instructions:$('campaignInstructions').value.trim()||null,visit_count:4})};
-$('addInfluencer').onclick=async()=>{const name=$('influencerName').value.trim(),email=$('influencerEmail').value.trim().toLowerCase(),phone_e164=$('influencerPhone').value.trim();if(!name||!email||!/^\+[1-9][0-9]{7,14}$/.test(phone_e164))return message('Enter name, email and phone in +91 format.');await insert('influencers',{name,email,phone_e164,instagram_url:$('influencerInstagram').value.trim()||null,category:$('influencerCategory').value.trim()||null})};
-$('assign').onclick=async()=>{const influencer_id=$('assignInfluencer').value,campaign_id=$('assignCampaign').value,pay=$('assignPay').value;if(!influencer_id||!campaign_id||pay===''||Number(pay)<0)return message('Select an influencer, campaign and agreed pay.');const {data,error}=await db.from('assignments').insert({influencer_id,campaign_id,total_pay:Number(pay)}).select('id').single();if(error)return message(error.message);const {error:ve}=await db.from('visits').insert([1,2,3,4].map(visit_number=>({assignment_id:data.id,visit_number})));message(ve?'Assignment saved, but visit creation failed: '+ve.message:'Assignment and four visits created.');await refresh()};
-if(db){$('loginMsg').textContent='Login system ready. Enter your credentials.';verify();}
+async function loadDashboard(){
+const [p,c,a]=await Promise.all([
+client.from('influencers').select('id,name,email,phone_e164,instagram_url,category,active').order('name'),
+client.from('campaigns').select('id,name,location,maps_url,instructions').order('name'),
+client.from('assignments').select('id,influencer_id,campaign_id,total_pay,advance')]);
+if(p.error||c.error||a.error)throw new Error([p.error?.message,c.error?.message,a.error?.message].filter(Boolean).join(' | '));
+people=p.data||[];campaigns=c.data||[];assignments=a.data||[];
+el('assignInfluencer').innerHTML='<option value="">Choose influencer</option>'+people.filter(x=>x.active).map(x=>'<option value="'+x.id+'">'+html(x.name)+'</option>').join('');
+el('assignCampaign').innerHTML='<option value="">Choose campaign</option>'+campaigns.map(x=>'<option value="'+x.id+'">'+html(x.name)+'</option>').join('');
+el('campaigns').innerHTML=campaigns.length?campaigns.map(x=>'<p><strong>'+html(x.name)+'</strong> · '+html(x.location||'Location not set')+'</p>').join(''):'No campaigns yet.';
+el('influencers').innerHTML=people.length?'<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Category</th></tr></thead><tbody>'+people.map(x=>'<tr><td>'+html(x.name)+'</td><td>'+html(x.email||'Not set')+'</td><td>'+html(x.phone_e164)+'</td><td>'+html(x.category||'—')+'</td></tr>').join('')+'</tbody></table>':'No influencers yet.';
+el('payments').innerHTML=assignments.length?'<table><thead><tr><th>Name</th><th>Total Pay</th><th>Advance</th><th>Status</th></tr></thead><tbody>'+assignments.map(x=>{const p=people.find(y=>y.id===x.influencer_id),c=campaigns.find(y=>y.id===x.campaign_id);const status=x.total_pay==null?'Not Set':Number(x.advance)>=Number(x.total_pay)?'Paid':Number(x.advance)>0?'Partial':'Unpaid';return '<tr><td>'+html(p?.name||'Unknown')+' ('+html(c?.name||'Unknown')+')</td><td>'+money(x.total_pay)+'</td><td>'+money(x.advance)+'</td><td>'+status+'</td></tr>'}).join('')+'</tbody></table>':'No assignments yet.';
+}
+async function verify(){
+const {data,error}=await client.auth.getUser();if(error)throw error;
+if(!data?.user)return;
+const result=await client.from('admins').select('user_id').eq('user_id',data.user.id).maybeSingle();
+if(result.error)throw result.error;
+if(!result.data){msg('This account is not authorized as an admin.');return;}
+el('login').classList.add('hidden');el('workspace').classList.remove('hidden');
+await loadDashboard();
+}
+async function init(){
+if(!window.supabase?.createClient){msg('Supabase library failed to load. Please try Safari or a different connection.');return;}
+client=window.supabase.createClient(url,key);
+msg('Login ready. Enter email and password.');
+try{await verify()}catch(e){msg('Session check: '+e.message)}
+}
+el('signIn').addEventListener('click',async()=>{
+if(!client){msg('Login library unavailable. Refresh the page.');return;}
+if(!el('email').value.trim()||!el('password').value){msg('Enter both email and password.');return;}
+el('signIn').disabled=true;msg('Signing in…');
+try{
+const result=await Promise.race([client.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Connection timed out after 15 seconds')),15000))]);
+if(result.error)throw result.error;
+msg('Signed in. Loading dashboard…');await verify();
+}catch(e){msg('Sign-in error: '+(e?.message||String(e)))}
+finally{el('signIn').disabled=false}
+});
+el('signOut').onclick=async()=>{await client.auth.signOut();location.reload()};
+async function insert(table,row){const {error}=await client.from(table).insert(row);if(error)throw error;await loadDashboard();el('status').textContent='Saved successfully.';}
+function action(fn){return async()=>{try{el('status').textContent='Saving…';await fn()}catch(e){el('status').textContent='Error: '+e.message}}}
+el('addCampaign').onclick=action(async()=>{const name=el('campaignName').value.trim();if(!name)throw Error('Campaign name required');await insert('campaigns',{name,location:el('campaignLocation').value.trim()||null,maps_url:el('campaignMaps').value.trim()||null,instructions:el('campaignInstructions').value.trim()||null,visit_count:4})});
+el('addInfluencer').onclick=action(async()=>{const name=el('influencerName').value.trim(),email=el('influencerEmail').value.trim().toLowerCase(),phone_e164=el('influencerPhone').value.trim();if(!name||!email||!/^\+[1-9][0-9]{7,14}$/.test(phone_e164))throw Error('Enter name, email and phone with +91 country code');await insert('influencers',{name,email,phone_e164,instagram_url:el('influencerInstagram').value.trim()||null,category:el('influencerCategory').value.trim()||null})});
+el('assign').onclick=action(async()=>{const influencer_id=el('assignInfluencer').value,campaign_id=el('assignCampaign').value,pay=el('assignPay').value;if(!influencer_id||!campaign_id||pay===''||Number(pay)<0)throw Error('Choose influencer, campaign and pay');const a=await client.from('assignments').insert({influencer_id,campaign_id,total_pay:Number(pay)}).select('id').single();if(a.error)throw a.error;const v=await client.from('visits').insert([1,2,3,4].map(visit_number=>({assignment_id:a.data.id,visit_number})));if(v.error)throw v.error;await loadDashboard();el('status').textContent='Assigned with four visits.'});
+init();
+})();
 </script></body></html>
